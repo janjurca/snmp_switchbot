@@ -44,16 +44,22 @@ public:
     for (size_t i = 0; i < 5; i++) {
       if (strcmp(objects[i].oid(), oid) == 0) {
         if (i < 4){
+          strcpy( oid, objects[i+1].oid());
           pdu->OID.fromString(objects[i+1].oid());
-          matched = true;
+        } else {
+            strcpy( oid, "1.0" );
         }
+        matched = true;
+        break;
       }
     }
     if (!matched) {
       int ilen = strlen(oid);
       for (size_t i = 0; i < 5; i++) {
         if ( strncmp(oid, objects[i].oid(), ilen ) == 0 ) {
+          strcpy( oid, objects[i].oid());
           pdu->OID.fromString(objects[i].oid());
+          break;
         }
       }
     }
@@ -66,6 +72,7 @@ public:
         pdu->type = SNMP_PDU_RESPONSE;
         pdu->error = status;
         matched = true;
+        break;
       }
     }
     if (!matched) {
