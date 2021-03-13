@@ -4,17 +4,13 @@
 
 #include <Arduino.h>
 #include <Servo.h>
+#include "scheduler.hpp"
 
+extern Scheduler sched;
+class Switch;
+extern Switch sw;
 
 class Switch : public Servo {
-//  using Servo::Servo;
-
-private:
-  int usb;
-  int servo_pin;
-  int UP = 90;
-  int DOWN = 110;
-
 
 public:
   enum STATES {
@@ -22,50 +18,56 @@ public:
     OFF = 2,
     REBOOT = 3
   };
+  enum VALS { UP = 90, DOWN = 110 };
+
+private:
+  int usb;
+  int servo_pin;
+
+
+  int actual_value = 0;
+
+  enum STATES desired_state = ON;
+  int retries = 0;
+
+public:
+
   Switch(int servo_pin, int usb) : Servo(), usb(usb),  servo_pin(servo_pin){ };
 
   void begin(){
     pinMode(usb, INPUT);
     attach(servo_pin);
-    write(UP);
+    turn(UP);
 
+  }
+
+  void turn(int val) {
+    actual_value = val;
+    write(val);
   }
 
   bool turn_on(){
-    if (isOn()) {
-      return true;
-    } else {
-      Serial.print(" Truning off ");
-      Serial.print(" down ");
-      write(DOWN);
-      delay(1000);
-      Serial.println(" up ");
-      write(UP);
-      delay(1000);
-      if (isOn()) {
-        return true;
+    desired_state = ON;
+    if (!isOn()) {
+      if (actual_value == UP) {
+        turn(DOWN);
+        sched.schedule(Task(millis() + 1000, [](){ sw.turn(Switch::UP); return true;}));
       }
     }
-    return false;
+    return true;
   };
 
   bool turn_off(){
-      if (!isOn()) {
-        return true;
-      } else {
-        Serial.print(" Truning off ");
-        Serial.print(" down ");
-        write(DOWN);
-        delay(6000);
-        Serial.println(" up ");
-        write(UP);
-        delay(1000);
-        if (!isOn()) {
-          return true;
+      desired_state = OFF;
+      if (isOn()) {
+        if (actual_value == UP) {
+          turn(DOWN);
+          sched.schedule(Task(millis() + 6000, [](){ sw.turn(Switch::UP); return true;}));
         }
       }
-      return false;
+      return true;
   }
+
 
   bool isOn(){
     if (digitalRead(usb) == HIGH) {
@@ -75,18 +77,15 @@ public:
   }
 
   bool set(const char *val){
+    retries = 0;
     switch (atoi(val)) {
       case ON:
         return turn_on();
       case OFF:
         return turn_off();
       case REBOOT:{
-        if (turn_off()) {
-          delay(1000);
-          return turn_on();
-        } else {
-          return false;
-        }
+        desired_state = REBOOT;
+        return true;
       }
       default:{
         return false;
@@ -95,6 +94,17 @@ public:
   }
 
   const char * get(){
+    if (actual_value == DOWN) {
+      switch (desired_state) {
+        case ON:
+          return "1";
+        case OFF:
+          return "2";
+        default:
+          return "0";
+      }
+    } 
+
     if (isOn()) {
       return "1";
     }
