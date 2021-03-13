@@ -1,13 +1,24 @@
+#ifndef SNMP_H
+#define SNMP_H value
+
+
 #include "Agentuino.h"
+#include "switch.hpp"
+
+extern Switch sw;
+
+typedef enum {INT, CHAR } types;
 
 class SNMP_OID_OBJECT {
-private:
+
+public:
   const char * m_oid;
   const char * (*p_get)();
   bool (*p_set)(const char *);
+  types t;
 
-public:
-  SNMP_OID_OBJECT (const char * oid, const char *(*get)(),bool (*set)(const char*)) : m_oid(oid), p_get(get), p_set(set){};
+
+  SNMP_OID_OBJECT (const char * oid, const char *(*get)(),bool (*set)(const char*), types t) : m_oid(oid), p_get(get), p_set(set), t(t) {};
 
   const char* oid(){
     return m_oid;
@@ -19,17 +30,22 @@ public:
   bool set(const char * value){
     return p_set(value);
   }
+
+  types type(){
+    return t;
+  }
 };
 
 
 class SNMP {
 private:
   SNMP_OID_OBJECT objects[5] = {
-    SNMP_OID_OBJECT( "1.3.6.1.2.1.1.1.0", []() {return "Agentuino, a light-weight SNMP Agent.";}, nullptr),
-    SNMP_OID_OBJECT( "1.3.6.1.2.1.1.2.0", []() {return "1.3.6.1.3.2009.0";}, nullptr),
-    SNMP_OID_OBJECT( "1.3.6.1.2.1.1.4.0", []() {return "Petr Domorazek";}, nullptr),
-    SNMP_OID_OBJECT( "1.3.6.1.2.1.1.5.0", []() {return "Agentuino";}, nullptr),
-    SNMP_OID_OBJECT( "1.3.6.1.2.1.1.6.0", []() {return "Czech Republic";}, nullptr)
+    SNMP_OID_OBJECT( "1.3.6.1.2.1.1.1.0", []() {return "KernelPerf Switchbot";}, nullptr, CHAR),
+    //SNMP_OID_OBJECT( "1.3.6.1.2.1.1.2.0", []() {return "1.3.6.1.4.1.318";}, nullptr, CHAR),
+    SNMP_OID_OBJECT( "1.3.6.1.2.1.1.4.0", []() {return "Jan Jurca";}, nullptr, CHAR),
+    SNMP_OID_OBJECT( "1.3.6.1.2.1.1.5.0", []() {return "KernelPerf Switchbot";}, nullptr, CHAR),
+    SNMP_OID_OBJECT( "1.3.6.1.2.1.1.6.0", []() {return "Czech Republic";}, nullptr, CHAR),
+    SNMP_OID_OBJECT( "1.3.6.1.4.1.318.1.1.4.4.2.1.3.1", []() {return sw.get();}, [](const char * value) {return sw.set(value);}, INT),
   };
   SNMP_API_STAT_CODES api_status;
   SNMP_ERR_CODES status;
@@ -42,13 +58,13 @@ public:
     pdu->OID.toString(oid);
     bool matched = false;
     if ( pdu->type == SNMP_PDU_GET_NEXT ) {
-      for (size_t i = 0; i < 5; i++) {
+      for (size_t i = 0; i < sizeof(objects) / sizeof(objects[0]); i++) {
         if (strcmp(objects[i].oid(), oid) == 0) {
-          if (i < 4){
+          if (i == (sizeof(objects) / sizeof(objects[0]))-1){
+            strcpy( oid, "1.0" );
+          } else {
             strcpy( oid, objects[i+1].oid());
             pdu->OID.fromString(objects[i+1].oid());
-          } else {
-              strcpy( oid, "1.0" );
           }
           matched = true;
           break;
@@ -56,7 +72,7 @@ public:
       }
       if (!matched) {
         int ilen = strlen(oid);
-        for (size_t i = 0; i < 5; i++) {
+        for (size_t i = 0; i < sizeof(objects) / sizeof(objects[0]); i++) {
           if ( strncmp(oid, objects[i].oid(), ilen ) == 0 ) {
             strcpy( oid, objects[i].oid());
             pdu->OID.fromString(objects[i].oid());
@@ -66,10 +82,19 @@ public:
       }
     }
     matched = false;
-    for (size_t i = 0; i < 5; i++) {
+    for (size_t i = 0; i < sizeof(objects) / sizeof(objects[0]); i++) {
       if ( strcmp(oid, objects[i].oid()) == 0 ) {
         // response packet from get-request - locDescr
-        status = pdu->VALUE.encode(SNMP_SYNTAX_OCTETS, objects[i].get());
+        switch (objects[i].type()) {
+          case INT:{
+            status = pdu->VALUE.encode(SNMP_SYNTAX_INT32,(int32_t) atoi(objects[i].get()));
+            break;
+          }
+          case CHAR:{
+            status = pdu->VALUE.encode(SNMP_SYNTAX_OCTETS, objects[i].get());
+            break;
+          }
+        }
         pdu->type = SNMP_PDU_RESPONSE;
         pdu->error = status;
         matched = true;
@@ -85,10 +110,32 @@ public:
   void set(SNMP_PDU *pdu){
     char oid[SNMP_MAX_OID_LEN];
     pdu->OID.toString(oid);
-    for (size_t i = 0; i < 5; i++) {
+    for (size_t i = 0; i < sizeof(objects) / sizeof(objects[0]); i++) {
       if ( strcmp(oid, objects[i].oid() ) == 0 ) {
+        if (objects[i].p_set == nullptr) {
+          pdu->error = SNMP_ERR_READ_ONLY;
+        } else {
+          char dst[20];
+          switch (objects[i].type()) {
+            case INT:{
+              int32_t val = 1;
+              status = pdu->VALUE.decode(&val);
+              snprintf(dst, 2, "%d",(int) val);
+              break;
+            }
+            case CHAR:{
+              status = pdu->VALUE.decode(dst, 20);
+              break;
+            }
+          }
+          Serial.println("SNMP: running set method");
+          if (objects[i].set(dst)) {
+            pdu->error = status;
+          } else {
+            pdu->error = SNMP_ERR_COMMIT_FAILED;
+          }
+        }
         pdu->type = SNMP_PDU_RESPONSE;
-        pdu->error = SNMP_ERR_READ_ONLY;
       }
     }
   }
@@ -120,3 +167,5 @@ public:
     //Agentuino.freePdu(&pdu);
   }
 };
+
+#endif
