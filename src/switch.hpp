@@ -27,8 +27,6 @@ private:
 
   int actual_value = 0;
 
-  enum STATES desired_state = ON;
-  int retries = 0;
 
 public:
 
@@ -47,23 +45,17 @@ public:
   }
 
   bool turn_on(){
-    desired_state = ON;
-    if (!isOn()) {
-      if (actual_value == UP) {
-        turn(DOWN);
-        sched.schedule(Task(millis() + 1000, [](){ sw.turn(Switch::UP); return true;}));
-      }
+    if (!isOn() && actual_value == UP) {
+      turn(DOWN);
+      sched.schedule(Task(millis() + 1000, [](){ return sw.isOn();}, [](){ sw.turn(Switch::UP); delay(400); return true;}));
     }
     return true;
   };
 
   bool turn_off(){
-      desired_state = OFF;
-      if (isOn()) {
-        if (actual_value == UP) {
-          turn(DOWN);
-          sched.schedule(Task(millis() + 6000, [](){ sw.turn(Switch::UP); return true;}));
-        }
+      if (isOn() && actual_value == UP) {
+        turn(DOWN);
+        sched.schedule(Task(millis() + 6000, [](){ return (!sw.isOn());}, [](){ sw.turn(Switch::UP); delay(400); return true;}));
       }
       return true;
   }
@@ -77,14 +69,12 @@ public:
   }
 
   bool set(const char *val){
-    retries = 0;
     switch (atoi(val)) {
       case ON:
         return turn_on();
       case OFF:
         return turn_off();
       case REBOOT:{
-        desired_state = REBOOT;
         return true;
       }
       default:{
@@ -94,18 +84,9 @@ public:
   }
 
   const char * get(){
-    if (actual_value == DOWN) {
-      switch (desired_state) {
-        case ON:
-          return "1";
-        case OFF:
-          return "2";
-        default:
-          return "0";
-      }
-    } 
-
-    if (isOn()) {
+    bool ison = isOn();
+    sched.run();
+    if (ison) {
       return "1";
     }
     return "2";
