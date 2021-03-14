@@ -4,17 +4,13 @@
 
 #include <Arduino.h>
 #include <Servo.h>
+#include "scheduler.hpp"
 
+extern Scheduler sched;
+class Switch;
+extern Switch sw;
 
 class Switch : public Servo {
-//  using Servo::Servo;
-
-private:
-  int usb;
-  int servo_pin;
-  int UP = 90;
-  int DOWN = 110;
-
 
 public:
   enum STATES {
@@ -22,50 +18,48 @@ public:
     OFF = 2,
     REBOOT = 3
   };
+  enum VALS { UP = 90, DOWN = 110 };
+
+private:
+  int usb;
+  int servo_pin;
+
+
+  int actual_value = 0;
+
+
+public:
+
   Switch(int servo_pin, int usb) : Servo(), usb(usb),  servo_pin(servo_pin){ };
 
   void begin(){
     pinMode(usb, INPUT);
     attach(servo_pin);
-    write(UP);
+    turn(UP);
 
+  }
+
+  void turn(int val) {
+    actual_value = val;
+    write(val);
   }
 
   bool turn_on(){
-    if (isOn()) {
-      return true;
-    } else {
-      Serial.print(" Truning off ");
-      Serial.print(" down ");
-      write(DOWN);
-      delay(1000);
-      Serial.println(" up ");
-      write(UP);
-      delay(1000);
-      if (isOn()) {
-        return true;
-      }
+    if (!isOn() && actual_value == UP) {
+      turn(DOWN);
+      sched.schedule(Task(millis() + 1000, [](){ return sw.isOn();}, [](){ sw.turn(Switch::UP); delay(400); return true;}));
     }
-    return false;
+    return true;
   };
 
   bool turn_off(){
-      if (!isOn()) {
-        return true;
-      } else {
-        Serial.print(" Truning off ");
-        Serial.print(" down ");
-        write(DOWN);
-        delay(6000);
-        Serial.println(" up ");
-        write(UP);
-        delay(1000);
-        if (!isOn()) {
-          return true;
-        }
+      if (isOn() && actual_value == UP) {
+        turn(DOWN);
+        sched.schedule(Task(millis() + 6000, [](){ return (!sw.isOn());}, [](){ sw.turn(Switch::UP); delay(400); return true;}));
       }
-      return false;
+      return true;
   }
+
 
   bool isOn(){
     if (digitalRead(usb) == HIGH) {
@@ -81,12 +75,7 @@ public:
       case OFF:
         return turn_off();
       case REBOOT:{
-        if (turn_off()) {
-          delay(1000);
-          return turn_on();
-        } else {
-          return false;
-        }
+        return true;
       }
       default:{
         return false;
@@ -95,7 +84,9 @@ public:
   }
 
   const char * get(){
-    if (isOn()) {
+    bool ison = isOn();
+    sched.run();
+    if (ison) {
       return "1";
     }
     return "2";

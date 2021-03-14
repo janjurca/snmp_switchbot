@@ -5,12 +5,14 @@
 #include <Agentuino.h>
 #include "snmp.hpp"
 #include "switch.hpp"
+#include "scheduler.hpp"
 
 #define SERVO_PIN 3
 #define USB_PIN 7
 
 SNMP snmp = SNMP();
 Switch sw = Switch(SERVO_PIN, USB_PIN);
+Scheduler sched = Scheduler();
 
 static byte mac[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED };
 static byte ip[] = { 192, 168, 1, 46 };
@@ -39,4 +41,5 @@ void setup()
 void loop()
 {
   Agentuino.listen();
+  sched.run();
 }
