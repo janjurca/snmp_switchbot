@@ -1,3 +1,7 @@
+/*
+Author: Jan Jurca
+ */
+
 #ifndef SCHEDULER_H
 #define SCHEDULER_H value
 
