@@ -1,5 +1,9 @@
-#include <Arduino.h>
+/*
+Author: Jan Jurca
+ */
 
+
+#include <Arduino.h>
 #include <Ethernet.h>          // Include the Ethernet library
 #include <SPI.h>
 #include <Agentuino.h>

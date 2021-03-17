@@ -1,3 +1,7 @@
+/*
+Author: Jan Jurca
+ */
+
 #ifndef SWITCH_H
 #define SWITCH_H value
 

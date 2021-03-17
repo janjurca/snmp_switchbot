@@ -1,3 +1,7 @@
+/*
+Author: Jan Jurca
+ */
+
 #ifndef SNMP_H
 #define SNMP_H value
 
