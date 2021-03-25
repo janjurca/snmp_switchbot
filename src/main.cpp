@@ -18,7 +18,7 @@ SNMP snmp = SNMP();
 Switch sw = Switch(SERVO_PIN, USB_PIN);
 Scheduler sched = Scheduler();
 
-static byte mac[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED };
+static byte mac[] = { 0xE2, 0x21, 0xC9, 0x36, 0xCA, 0xF6 };
 static byte ip[] = { 192, 168, 1, 46 };
 //static byte gateway[] = { 192, 168, 20, 1 };
 //static byte subnet[] = { 255, 255, 255, 0 };
