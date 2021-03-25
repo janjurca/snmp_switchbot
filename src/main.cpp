@@ -21,9 +21,9 @@ Scheduler sched = Scheduler();
 static byte mac[] = { 0xE2, 0x21, 0xC9, 0x36, 0xCA, 0xF6 };
 static byte ip[] = { 10, 43, 134, 175 };
 
-//static byte gateway[] = { 10, 43, 134, 1 };
-//static byte dns[] = { 1, 1, 1, 1 };
-//static byte subnet[] = { 255, 255, 255, 0 };
+static byte gateway[] = { 10, 43, 134, 1 };  // NOT used if line ETHERNET BEGIN is commented (41)
+static byte dns[] = { 1, 1, 1, 1 };  // NOT used if line ETHERNET BEGIN is commented (41)
+static byte subnet[] = { 255, 255, 255, 0 };  // NOT used if line ETHERNET BEGIN is commented (41)
 
 SNMP_API_STAT_CODES api_status;
 
