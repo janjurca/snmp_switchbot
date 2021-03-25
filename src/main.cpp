@@ -19,9 +19,12 @@ Switch sw = Switch(SERVO_PIN, USB_PIN);
 Scheduler sched = Scheduler();
 
 static byte mac[] = { 0xE2, 0x21, 0xC9, 0x36, 0xCA, 0xF6 };
-static byte ip[] = { 192, 168, 1, 46 };
-//static byte gateway[] = { 192, 168, 20, 1 };
+static byte ip[] = { 10, 43, 134, 175 };
+
+//static byte gateway[] = { 10, 43, 134, 1 };
+//static byte dns[] = { 1, 1, 1, 1 };
 //static byte subnet[] = { 255, 255, 255, 0 };
+
 SNMP_API_STAT_CODES api_status;
 
 
@@ -35,6 +38,7 @@ void setup()
   sw.begin();
 
   Ethernet.begin(mac, ip);
+  //Ethernet.begin(mac, ip, dns, gateway, subnet);
   api_status = Agentuino.begin();
   if ( api_status == SNMP_API_STAT_SUCCESS ) {
     Agentuino.onPduReceive(proccess);
