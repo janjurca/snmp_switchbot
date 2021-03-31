@@ -51,7 +51,7 @@ public:
   bool turn_on(){
     if (!isOn() && actual_value == UP) {
       turn(DOWN);
-      sched.schedule(Task(millis() + 1000, [](){ return sw.isOn();}, [](){ sw.turn(Switch::UP); delay(400); return true;}));
+      sched.schedule(Task(millis() + 1000, [](){ return sw.isOn();}, [](){ sw.turn(Switch::UP); delay(600); return true;}));
     }
     return true;
   };
@@ -59,7 +59,7 @@ public:
   bool turn_off(){
       if (isOn() && actual_value == UP) {
         turn(DOWN);
-        sched.schedule(Task(millis() + 30000, [](){ return (!sw.isOn());}, [](){ sw.turn(Switch::UP); delay(400); return true;}));
+        sched.schedule(Task(millis() + 30000, [](){ return (!sw.isOn());}, [](){ sw.turn(Switch::UP); delay(600); return true;}));
       }
       return true;
   }
