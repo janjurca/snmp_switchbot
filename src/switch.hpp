@@ -59,7 +59,7 @@ public:
   bool turn_off(){
       if (isOn() && actual_value == UP) {
         turn(DOWN);
-        sched.schedule(Task(millis() + 6000, [](){ return (!sw.isOn());}, [](){ sw.turn(Switch::UP); delay(400); return true;}));
+        sched.schedule(Task(millis() + 15000, [](){ return (!sw.isOn());}, [](){ sw.turn(Switch::UP); delay(400); return true;}));
       }
       return true;
   }
