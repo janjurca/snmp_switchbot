@@ -44,10 +44,10 @@ public:
 class SNMP {
 private:
   SNMP_OID_OBJECT objects[5] = {
-    SNMP_OID_OBJECT( "1.3.6.1.2.1.1.1.0", []() {return "KernelPerf Switchbot";}, nullptr, CHAR),
+    SNMP_OID_OBJECT( "1.3.6.1.2.1.1.1.0", []() {return "Switchbot";}, nullptr, CHAR),
     //SNMP_OID_OBJECT( "1.3.6.1.2.1.1.2.0", []() {return "1.3.6.1.4.1.318";}, nullptr, CHAR),
-    SNMP_OID_OBJECT( "1.3.6.1.2.1.1.4.0", []() {return "Jan Jurca";}, nullptr, CHAR),
-    SNMP_OID_OBJECT( "1.3.6.1.2.1.1.5.0", []() {return "KernelPerf Switchbot";}, nullptr, CHAR),
+    SNMP_OID_OBJECT( "1.3.6.1.2.1.1.4.0", []() {return "Someone";}, nullptr, CHAR),
+    SNMP_OID_OBJECT( "1.3.6.1.2.1.1.5.0", []() {return "Switchbot";}, nullptr, CHAR),
     SNMP_OID_OBJECT( "1.3.6.1.2.1.1.6.0", []() {return "Czech Republic";}, nullptr, CHAR),
     SNMP_OID_OBJECT( "1.3.6.1.4.1.318.1.1.4.4.2.1.3.1", []() {return sw.get();}, [](const char * value) {return sw.set(value);}, INT),
   };
